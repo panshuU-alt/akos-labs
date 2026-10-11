@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3"]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
     echo "no arguments"
     echo "usage: $0 <log_dir> <limit_percent> <files_count> [backup_dir]"
     exit 1
@@ -44,10 +44,9 @@ fi
 
 human_size=$(du -sh "$log_direction" | cut -f1)
 
-#размер директории в человекочитаемом и байтовом формате
+
 echo "Directory size: $human_size"
 
-#размер диска в человекочитаемом формате
 echo "Disk size: $(df -h "$log_direction" | tail -1 | awk '{print $2}')"
 
 echo "Usage: $usage%"
@@ -57,6 +56,8 @@ if [ "$usage" -ge "$limit" ]; then
 else
 
     echo "limit not exceeded ($usage% < $limit%)"
+    echo "Archiving not required."
+    exit 0
 fi
 
-exit 0
+
