@@ -1,0 +1,13 @@
+truncate -s 1G ~/akos-labs/disk500.img
+
+mkfs.ext4 disk500.img
+
+mkdir -p ~/akos-labs/limited_folder
+
+sudo mount -o loop ~/akos-labs/disk500.img ~/akos-labs/limited_folder
+
+sudo chown -R $USER:$USER ~/akos-labs/limited_folder
+
+mkdir -p ~/akos-labs/limited_folder/log
+
+mkdir -p ~/akos-labs/backup

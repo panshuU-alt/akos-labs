@@ -1,8 +1,12 @@
-# Virtual disk image
-fold_log.img
+# Virtual disk images
+disk500.img
+*.img
 
 # Mounted folder
 limited_folder/
+
+# Backup folder
+backup/
 
 # Nano swap files
 *.swp
