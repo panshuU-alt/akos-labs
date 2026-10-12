@@ -61,3 +61,17 @@ else
 fi
 
 
+mkdir -p "$backup_dir" || { echo "cannot create backup directory"; exit 1; }
+
+list=$(mktemp)
+trap 'rm -f "$list"' EXIT       # при любом выходе из скрипта — удалить временный файл
+
+LC_ALL=C find "$log_direction" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %P\0' \
+    | LC_ALL=C sort -z -n \
+    | head -z -n "$m_files" \
+    | cut -z -d' ' -f2- > "$list"
+
+if [ ! -s "$list" ]; then
+    echo "No suitable files to archive."
+    exit 0
+fi
