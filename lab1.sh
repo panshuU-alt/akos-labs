@@ -70,3 +70,20 @@ if [ ! -s "$list" ]; then
     exit 0
 fi
 
+archive="$backup_dir/log_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz"
+if tar -czf "$archive" -C "$log_direction" --null -T "$list"; then 
+    count=0
+    while IFS= read -r -d '' f; do
+       rm -f -- "$log _direction/$f"
+       count=$((count + 1))
+    done < "$list"
+    echo "Archived $count file(s) to $archive"
+    echo "Usage after archiving: $(df --output=pcent "$log_direction" | tail -1 | tr -dc '0-9')%"
+else
+    echo "tar failed" 
+    rm -f "$archive"
+    exit 2
+fi
+
+exit 0
+
