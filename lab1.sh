@@ -62,7 +62,9 @@ fi
 
 list=$(mktemp)
 
-find "$log_direction" -type f -printf '%T@ %p\n' | sort -n | head -n "$m_files" | awk '{print $2}' > "$list"
+trap 'rm -f "$list"' EXIT
+
+find "$log_direction" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %P\0' | sort -z -n | head -z -n "$m_files" | cut -z -d' ' -f2- > "$list"
 
 if [ ! -s "$list" ]; then
     echo "no suitable files to archive."
@@ -74,7 +76,7 @@ archive="$backup_dir/log_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz"
 if tar -czf "$archive" -C "$log_direction" --null -T "$list"; then 
     count=0
     while IFS= read -r -d '' f; do
-       rm -f -- "$log _direction/$f"
+       rm -f -- "$log_direction/$f"
        count=$((count + 1))
     done < "$list"
     echo "Archived $count file(s) to $archive"
