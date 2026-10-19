@@ -1,28 +1,27 @@
 #!/bin/bash
 
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-export PATH
 export LC_ALL=C
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+if [ $# -lt 3 ]; then
     echo "no arguments"
     echo "usage: $0 <log_dir> <limit_percent> <files_count> [backup_dir]"
     exit 1
 fi
 
-log_direction="$1"
+dir="$1"
 limit="$2"
-m_files="$3"
-backup_dir="${4:-/backup}"
+m="$3"
+backup="${4:-/backup}"
 
-if [ ! -d "$log_direction" ]; then
+if [ ! -d "$dir" ]; then
     echo "directory not found"
     exit 1
 fi
 
-real_dir=$(realpath "$log_direction")
-if [ "$real_dir" = "/" ] || [ "$real_dir" = "/etc" ] || [ "$real_dir" = "/bin" ] || [ "$real_dir" = "/boot" ] || [ "$real_dir" = "/usr" ]; then
-    echo "refusing to work with system directory: $real_dir"
+dir=$(realpath "$dir")
+
+if [ "$dir" = "/" ] || [ "$dir" = "/etc" ] || [ "$dir" = "/bin" ] || [ "$dir" = "/boot" ] || [ "$dir" = "/usr" ]; then
+    echo "refusing to work with system directory: $dir"
     exit 1
 fi
 
@@ -36,28 +35,19 @@ if [ "$limit" -gt 100 ]; then
     exit 1
 fi
 
-if ! [[ "$m_files" =~ ^[0-9]+$ ]] || [ "$m_files" -lt 1 ]; then
+if ! [[ "$m" =~ ^[0-9]+$ ]] || [ "$m" -lt 1 ]; then
     echo "files count must be integer >=1"
     exit 1
 fi
 
-# запись в системный журнал: кто запустил скрипт
-logger -t lab1 "run by ${SUDO_USER:-$USER}: dir=$real_dir limit=$limit files=$m_files"
+logger -t lab1 "run by ${SUDO_USER:-$USER}: dir=$dir limit=$limit files=$m"
 
-echo "directory: $log_direction"
+usage=$(df -P "$dir" | tail -1 | awk '{print $5}' | tr -d '%')
+
+echo "directory: $dir"
 echo "limit: $limit%"
-
-usage=$(df -P "$log_direction" | tail -1 | awk '{print $5}' | tr -d '%')
-
-if [ -z "$usage" ]; then
-    echo "cannot determine disk usage"
-    exit 1
-fi
-
-human_size=$(du -sh "$log_direction" | cut -f1)
-
-echo "directory size: $human_size"
-echo "disk size: $(df -Ph "$log_direction" | tail -1 | awk '{print $2}')"
+echo "directory size: $(du -sh "$dir" | cut -f1)"
+echo "disk size: $(df -Ph "$dir" | tail -1 | awk '{print $2}')"
 echo "usage: $usage%"
 
 if [ "$usage" -lt "$limit" ]; then
@@ -67,31 +57,31 @@ fi
 
 echo "limit exceeded ($usage% >= $limit%)"
 
-if ! mkdir -p "$backup_dir"; then
+if ! mkdir -p "$backup"; then
     echo "cannot create backup directory"
     exit 1
 fi
 
-list=$(mktemp)
+files=$(ls -tr "$dir" | while read -r name; do
+    if [ -f "$dir/$name" ] && [[ "$name" != *.gz ]] && [[ "$name" != *.tar ]]; then
+        echo "$name"
+    fi
+done | head -n "$m")
 
-trap 'rm -f "$list"' EXIT
-
-find "$log_direction" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %P\0' | sort -z -n | head -z -n "$m_files" | cut -z -d' ' -f2- > "$list"
-
-if [ ! -s "$list" ]; then
+if [ -z "$files" ]; then
     echo "no suitable files to archive."
     exit 0
 fi
 
-archive="$backup_dir/log_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz"
-if tar -czf "$archive" -C "$log_direction" --null -T "$list"; then
-    count=0
-    while IFS= read -r -d '' f; do
-       rm -f -- "$log_direction/$f"
-       count=$((count + 1))
-    done < "$list"
-    echo "archived $count file(s) to $archive"
-    echo "usage after archiving: $(df --output=pcent "$log_direction" | tail -1 | tr -dc '0-9')%"
+archive="$backup/log_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz"
+
+if echo "$files" | tar -czf "$archive" -C "$dir" -T -; then
+    echo "$files" | while read -r f; do
+        rm -f "$dir/$f"
+    done
+    count=$(echo "$files" | wc -l)
+    echo "Archived $count file(s) to $archive"
+    echo "Usage after archiving: $(df -P "$dir" | tail -1 | awk '{print $5}')"
 else
     echo "tar failed"
     rm -f "$archive"
