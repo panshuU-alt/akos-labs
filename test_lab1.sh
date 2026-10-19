@@ -3,12 +3,12 @@
 SCRIPT="$(dirname "$(readlink -f "$0")")/lab1.sh"
 
 if [ "$EUID" -ne 0 ]; then
-    echo "Запусти через sudo: sudo $0"
+    echo "run through sudo: sudo $0"
     exit 1
 fi
 
 if [ ! -f "$SCRIPT" ]; then
-    echo "Не найден $SCRIPT (lab1.sh должен лежать рядом с тестами)"
+    echo "not found $SCRIPT (should be located next to the tests)"
     exit 1
 fi
 
@@ -59,53 +59,53 @@ mkfile() {
 count_archives() { find "$BACKUP" -name '*.tar.gz' | wc -l; }
 first_archive()  { find "$BACKUP" -name '*.tar.gz' | head -1; }
 
-echo "== 1. Проверка аргументов =="
+echo "checking arguements"
 
 run
-assert "без аргументов: код 1" [ "$CODE" -eq 1 ]
-assert "без аргументов: 'no arguments'"  grep -q "no arguments" <<< "$OUT"
+assert "without arguements: code 1" [ "$CODE" -eq 1 ]
+assert "without arguements: 'no arguments'"  grep -q "no arguments" <<< "$OUT"
 
 run "$MNT"
-assert "только путь: код 1" [ "$CODE" -eq 1 ]
+assert "only path: code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" 50
-assert "нет M: код 1" [ "$CODE" -eq 1 ]
+assert "no M: code 1" [ "$CODE" -eq 1 ]
 
 run /no/such/dir 50 2 "$BACKUP"
-assert "нет папки: код 1" [ "$CODE" -eq 1 ]
-assert "нет папки: 'directory not found'"  grep -q "directory not found" <<< "$OUT"
+assert "bad dir: code 1" [ "$CODE" -eq 1 ]
+assert "bad dir: 'directory not found'"  grep -q "directory not found" <<< "$OUT"
 
 run "$MNT" abc 2 "$BACKUP"
-assert "порог 'abc': код 1" [ "$CODE" -eq 1 ]
+assert "limit 'abc': code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" -5 2 "$BACKUP"
-assert "порог -5: код 1" [ "$CODE" -eq 1 ]
+assert "limit -5: code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" 1.5 2 "$BACKUP"
-assert "порог 1.5: код 1" [ "$CODE" -eq 1 ]
+assert "limit 1.5: code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" 101 2 "$BACKUP"
-assert "порог 101: код 1" [ "$CODE" -eq 1 ]
+assert "limit 101: code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" 50 abc "$BACKUP"
-assert "M='abc': код 1" [ "$CODE" -eq 1 ]
+assert "M='abc': code 1" [ "$CODE" -eq 1 ]
 
 run "$MNT" 50 0 "$BACKUP"
-assert "M=0: код 1" [ "$CODE" -eq 1 ]
+assert "M=0: code 1" [ "$CODE" -eq 1 ]
 
-echo "== 2. Порог не превышен =="
+echo "limit not exceeded"
 
 reset
 
 mkfile a.log 1 1
 run "$MNT" 90 2 "$BACKUP"
-assert "код 0" [ "$CODE" -eq 0 ]
+assert "code 0" [ "$CODE" -eq 0 ]
 assert "'limit not exceeded'" grep -qi "limit not exceeded" <<< "$OUT"
-assert "выводится процент 'usage:'" grep -qi "usage:" <<< "$OUT"
-assert "архив не создан" [ "$(count_archives)" -eq 0 ]
-assert "файл на месте" [ -e "$MNT/a.log" ]
+assert "printed percentage 'usage:'" grep -qi "usage:" <<< "$OUT"
+assert "no archive" [ "$(count_archives)" -eq 0 ]
+assert "file still there" [ -e "$MNT/a.log" ]
 
-echo "== 3. Порог превышен: архивируются M самых старых =="
+echo "limit exceeded (oldest M files is archiving)"
 
 reset
 
@@ -116,17 +116,17 @@ mkfile new1.log 200 1
 run "$MNT" 30 2 "$BACKUP"
 ARC=$(first_archive)
 
-assert "код 0" [ "$CODE" -eq 0 ]
+assert "code 0" [ "$CODE" -eq 0 ]
 assert "'limit exceeded'" grep -qi "limit exceeded" <<< "$OUT"
-assert "создан ровно 1 архив" [ "$(count_archives)" -eq 1 ]
-assert "в архиве old1.log" bash -c "tar -tzf '$ARC' | grep -qx old1.log"
-assert "в архиве old2.log" bash -c "tar -tzf '$ARC' | grep -qx old2.log"
-assert "в архиве НЕТ new1.log" bash -c "! tar -tzf '$ARC' | grep -qx new1.log"
-assert "old1.log удалён из папки" [ ! -e "$MNT/old1.log" ]
-assert "old2.log удалён из папки" [ ! -e "$MNT/old2.log" ]
-assert "new1.log остался" [ -e "$MNT/new1.log" ]
+assert "created exactly 1 archive" [ "$(count_archives)" -eq 1 ]
+assert "old1.log in archive" bash -c "tar -tzf '$ARC' | grep -qx old1.log"
+assert "old2.log in archive" bash -c "tar -tzf '$ARC' | grep -qx old2.log"
+assert "new1.log not in archive" bash -c "! tar -tzf '$ARC' | grep -qx new1.log"
+assert "old1.log removed" [ ! -e "$MNT/old1.log" ]
+assert "old2.log removed" [ ! -e "$MNT/old2.log" ]
+assert "new1.log is still there" [ -e "$MNT/new1.log" ]
 
-echo "== 4. Содержимое файла в архиве не повреждено =="
+echo "content in archive is not broken"
 
 reset
 
@@ -139,10 +139,10 @@ touch -d "1 day ago" "$MNT/pad.log"
 run "$MNT" 10 1 "$BACKUP"
 ARC=$(first_archive)
 
-assert "код 0" [ "$CODE" -eq 0 ]
-assert "текст внутри архива совпадает" bash -c "tar -xzOf '$ARC' data.log | grep -qx secret-text-123"
+assert "code 0" [ "$CODE" -eq 0 ]
+assert "text inside archive matches" bash -c "tar -xzOf '$ARC' data.log | grep -qx secret-text-123"
 
-echo "== 5. M больше, чем файлов =="
+echo "M bigger than files count"
 
 reset
 
@@ -151,12 +151,12 @@ mkfile b.log 1 1
 
 run "$MNT" 10 10 "$BACKUP"
 
-assert "код 0" [ "$CODE" -eq 0 ]
-assert "a.log заархивирован и удалён" [ ! -e "$MNT/a.log" ]
-assert "b.log заархивирован и удалён" [ ! -e "$MNT/b.log" ]
+assert "code 0" [ "$CODE" -eq 0 ]
+assert "a.log archived and removed" [ ! -e "$MNT/a.log" ]
+assert "b.log archived and removed" [ ! -e "$MNT/b.log" ]
 assert "архив создан" [ "$(count_archives)" -eq 1 ]
 
-echo "== 6. Фильтрация: .gz и подпапки не трогаем =="
+echo "filter (.gz and subdirs skip)"
 
 reset
 
@@ -171,13 +171,13 @@ mkfile big.log 400 3
 run "$MNT" 10 1 "$BACKUP"
 ARC=$(first_archive)
 
-assert "код 0" [ "$CODE" -eq 0 ]
-assert "big.log заархивирован" bash -c "tar -tzf '$ARC' | grep -qx big.log"
-assert "old.gz не заархивирован" bash -c "! tar -tzf '$ARC' | grep -q 'old.gz'"
-assert "old.gz остался" [ -e "$MNT/old.gz" ]
-assert "sub/inner.log остался" [ -e "$MNT/sub/inner.log" ]
+assert "code 0" [ "$CODE" -eq 0 ]
+assert "big.log archived" bash -c "tar -tzf '$ARC' | grep -qx big.log"
+assert "old.gz not archived" bash -c "! tar -tzf '$ARC' | grep -q 'old.gz'"
+assert "old.gz is still there" [ -e "$MNT/old.gz" ]
+assert "sub/inner.log is still there" [ -e "$MNT/sub/inner.log" ]
 
-echo "== 7. Имена файлов с пробелами =="
+echo "file's name with space"
 
 reset
 
@@ -186,11 +186,11 @@ mkfile "my file.log" 400 3
 run "$MNT" 10 1 "$BACKUP"
 ARC=$(first_archive)
 
-assert "код 0" [ "$CODE" -eq 0 ]
-assert "файл с пробелом в архиве" bash -c "tar -tzf '$ARC' | grep -qx 'my file.log'"
-assert "файл с пробелом удалён" [ ! -e "$MNT/my file.log" ]
+assert "code 0" [ "$CODE" -eq 0 ]
+assert "file with space in archive" bash -c "tar -tzf '$ARC' | grep -qx 'my file.log'"
+assert "file with space removed" [ ! -e "$MNT/my file.log" ]
 
-echo "== 8. Порог 0 и непустая папка =="
+echo "linit 0 and not empty dir"
 
 reset
 
@@ -198,20 +198,20 @@ mkfile a.log 1 1
 
 run "$MNT" 0 1 "$BACKUP"
 
-assert "порог 0: превышен" grep -qi "limit exceeded" <<< "$OUT"
-assert "порог 0: файл заархивирован" [ ! -e "$MNT/a.log" ]
+assert "limit 0: exceeded" grep -qi "limit exceeded" <<< "$OUT"
+assert "limit 0: file archived" [ ! -e "$MNT/a.log" ]
 
-echo "== 9. Пустая папка при превышении (нечего архивировать) =="
+echo "empty dir and limit exceeded (no to archive)"
 
 reset
 
 run "$MNT" 0 1 "$BACKUP"
 
-assert "код 0" [ "$CODE" -eq 0 ]
+assert "code 0" [ "$CODE" -eq 0 ]
 assert "'no suitable files'" grep -qi "no suitable files" <<< "$OUT"
-assert "архив не создан" [ "$(count_archives)" -eq 0 ]
+assert "archive is not created" [ "$(count_archives)" -eq 0 ]
 
-echo "== 10. Папка бэкапа создаётся, если её нет =="
+echo "backup dir created if not earlier"
 
 reset
 
@@ -220,11 +220,11 @@ NEWB="$WORK/new_backup_dir"
 
 run "$MNT" 10 1 "$NEWB"
 
-assert "код 0" [ "$CODE" -eq 0 ]
-assert "папка бэкапа создана" [ -d "$NEWB" ]
-assert "в ней лежит архив" bash -c "ls '$NEWB'/*.tar.gz >/dev/null 2>&1"
+assert "code 0" [ "$CODE" -eq 0 ]
+assert "backup dir created" [ -d "$NEWB" ]
+assert "archive inside backup" bash -c "ls '$NEWB'/*.tar.gz >/dev/null 2>&1"
 
-echo "== 11. Два запуска подряд: архивы не затирают друг друга =="
+echo "two runs(archives not overrite each other)"
 
 reset
 
@@ -235,11 +235,11 @@ mkfile c.log 200 3
 run "$MNT" 10 1 "$BACKUP"
 run "$MNT" 10 1 "$BACKUP"
 
-assert "создано 2 разных архива" [ "$(count_archives)" -eq 2 ]
-assert "c.log остался" [ -e "$MNT/c.log" ]
-assert "a.log удалён" [ ! -e "$MNT/a.log" ]
-assert "b.log удалён" [ ! -e "$MNT/b.log" ]
+assert "created two diff archives" [ "$(count_archives)" -eq 2 ]
+assert "c.log is still there" [ -e "$MNT/c.log" ]
+assert "a.log removed" [ ! -e "$MNT/a.log" ]
+assert "b.log removed" [ ! -e "$MNT/b.log" ]
 
-echo "Итого: PASS=$PASS FAIL=$FAIL"
+echo "IN TOTAL: PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
 
