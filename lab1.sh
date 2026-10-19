@@ -62,7 +62,7 @@ if ! mkdir -p "$backup"; then
     exit 1
 fi
 
-find "$dir" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %f\n' | sort -n | cut -d' ' -f2- | head -n "$m"
+files=$(find "$dir" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %f\n' | sort -n | cut -d' ' -f2- | head -n "$m")
 
 if [ -z "$files" ]; then
     echo "no suitable files to archive."
