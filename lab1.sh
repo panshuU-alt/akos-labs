@@ -62,27 +62,20 @@ if ! mkdir -p "$backup"; then
     exit 1
 fi
 
-list=$(mktemp)
-trap 'rm -f "$list"' EXIT
+files=$(find "$dir" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %p\n' | sort -n | cut -d' ' -f2- | head -n "$m")
 
-find "$dir" -maxdepth 1 -type f ! -name '*.gz' ! -name '*.tar' -printf '%T@ %p\0' \
-    | sort -z -n \
-    | head -z -n "$m" \
-    | cut -z -d' ' -f2- > "$list"
-
-if [ ! -s "$list" ]; then
+if [ -z "$files" ]; then
     echo "no suitable files to archive."
     exit 0
 fi
 
 archive="$backup/log_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz"
 
-if tar -czf "$archive" -C "$dir" --null -T "$list"; then
-    count=0
-    while IFS= read -r -d '' f; do
-        rm -f -- "$dir/$f"
-        count=$((count + 1))
-    done < "$list"
+if echo "$files" | tar -czf "$archive" -C "$dir" -T -; then
+    echo "$files" | while read -r f; do
+        rm -f "$dir/$f"
+    done
+    count=$(echo "$files" | wc -l)
     echo "Archived $count file(s) to $archive"
     echo "Usage after archiving: $(df -P "$dir" | tail -1 | awk '{print $5}')"
 else
