@@ -18,16 +18,16 @@ MNT="$WORK/log"
 BACKUP="$WORK/backup"
 mkdir -p "$MNT" "$BACKUP"
 
-truncate -s 1G "$IMG"
-mkfs.ext4 -q -F "$IMG"
-mount -o loop "$IMG" "$MNT"
-
 cleanup() {
     umount "$MNT" 2>/dev/null
     rm -rf "$WORK"
 }
 
 trap cleanup EXIT
+
+truncate -s 1G "$IMG"
+mkfs.ext4 -q -F "$IMG"
+mount -o loop "$IMG" "$MNT"
 
 PASS=0
 FAIL=0
@@ -242,4 +242,7 @@ assert "b.log removed" [ ! -e "$MNT/b.log" ]
 
 echo "IN TOTAL: PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
+
+
+
 
