@@ -100,7 +100,7 @@ reset
 mkfile a.log 1 1
 run "$MNT" 90 2 "$BACKUP"
 assert "code 0" [ "$CODE" -eq 0 ]
-assert "'limit not exceeded'" grep -qi "limit not exceeded" <<< "$OUT"
+assert "limit not exceeded" grep -qi "limit not exceeded" <<< "$OUT"
 assert "printed percentage 'usage:'" grep -qi "usage:" <<< "$OUT"
 assert "no archive" [ "$(count_archives)" -eq 0 ]
 assert "file still there" [ -e "$MNT/a.log" ]
@@ -117,7 +117,7 @@ run "$MNT" 30 2 "$BACKUP"
 ARC=$(first_archive)
 
 assert "code 0" [ "$CODE" -eq 0 ]
-assert "'limit exceeded'" grep -qi "limit exceeded" <<< "$OUT"
+assert "limit exceeded" grep -qi "limit exceeded" <<< "$OUT"
 assert "created exactly 1 archive" [ "$(count_archives)" -eq 1 ]
 assert "old1.log in archive" bash -c "tar -tzf '$ARC' | grep -qx old1.log"
 assert "old2.log in archive" bash -c "tar -tzf '$ARC' | grep -qx old2.log"
@@ -154,7 +154,7 @@ run "$MNT" 10 10 "$BACKUP"
 assert "code 0" [ "$CODE" -eq 0 ]
 assert "a.log archived and removed" [ ! -e "$MNT/a.log" ]
 assert "b.log archived and removed" [ ! -e "$MNT/b.log" ]
-assert "архив создан" [ "$(count_archives)" -eq 1 ]
+assert "archive created" [ "$(count_archives)" -eq 1 ]
 
 echo "filter (.gz and subdirs skip)"
 
@@ -208,7 +208,7 @@ reset
 run "$MNT" 0 1 "$BACKUP"
 
 assert "code 0" [ "$CODE" -eq 0 ]
-assert "'no suitable files'" grep -qi "no suitable files" <<< "$OUT"
+assert "no suitable files" grep -qi "no suitable files" <<< "$OUT"
 assert "archive is not created" [ "$(count_archives)" -eq 0 ]
 
 echo "backup dir created if not earlier"
