@@ -40,8 +40,6 @@ if ! [[ "$m" =~ ^[0-9]+$ ]] || [ "$m" -lt 1 ]; then
     exit 1
 fi
 
-logger -t lab1 "run by ${SUDO_USER:-$USER}: dir=$dir limit=$limit files=$m"
-
 usage=$(df -P "$dir" | tail -1 | awk '{print $5}' | tr -d '%')
 
 echo "directory: $dir"
