@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export LC_ALL=C
-
 if [ $# -lt 3 ]; then
     echo "no arguments"
     echo "usage: $0 <log_dir> <limit_percent> <files_count> [backup_dir]"
@@ -15,13 +13,6 @@ backup="${4:-/backup}"
 
 if [ ! -d "$dir" ]; then
     echo "directory not found"
-    exit 1
-fi
-
-dir=$(realpath "$dir")
-
-if [ "$dir" = "/" ] || [ "$dir" = "/etc" ] || [ "$dir" = "/bin" ] || [ "$dir" = "/boot" ] || [ "$dir" = "/usr" ]; then
-    echo "refusing to work with system directory: $dir"
     exit 1
 fi
 
@@ -48,7 +39,7 @@ echo "directory size: $(du -sh "$dir" | cut -f1)"
 echo "disk size: $(df -Ph "$dir" | tail -1 | awk '{print $2}')"
 echo "usage: $usage%"
 
-if [ "$usage" -lt "$limit" ]; then
+if [ "$usage" -le "$limit" ]; then
     echo "limit not exceeded ($usage% < $limit%)"
     exit 0
 fi
