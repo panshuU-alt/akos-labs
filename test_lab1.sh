@@ -240,9 +240,20 @@ assert "c.log is still there" [ -e "$MNT/c.log" ]
 assert "a.log removed" [ ! -e "$MNT/a.log" ]
 assert "b.log removed" [ ! -e "$MNT/b.log" ]
 
+echo "boundary: usage equals limit"
+
+reset
+
+mkfile a.log 100 2
+U=$(df -P "$MNT" | tail -1 | awk '{print $5}' | tr -d '%')
+
+run "$MNT" "$U" 1 "$BACKUP"
+assert "usage == limit: not exceeded" grep -qi "limit not exceeded" <<< "$OUT"
+assert "usage == limit: file still there" [ -e "$MNT/a.log" ]
+
+run "$MNT" $((U - 1)) 1 "$BACKUP"
+assert "usage == limit-1: exceeded" grep -qi "limit exceeded" <<< "$OUT"
+assert "usage == limit-1: file archived" [ ! -e "$MNT/a.log" ]
+
 echo "IN TOTAL: PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
-
-
-
-
