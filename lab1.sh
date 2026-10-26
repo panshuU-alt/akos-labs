@@ -40,11 +40,11 @@ echo "disk size: $(df -Ph "$dir" | tail -1 | awk '{print $2}')"
 echo "usage: $usage%"
 
 if [ "$usage" -le "$limit" ]; then
-    echo "limit not exceeded ($usage% < $limit%)"
+    echo "limit not exceeded ($usage% <= $limit%)"
     exit 0
 fi
 
-echo "limit exceeded ($usage% >= $limit%)"
+echo "limit exceeded ($usage% > $limit%)"
 
 if ! mkdir -p "$backup"; then
     echo "cannot create backup directory"
@@ -74,3 +74,5 @@ else
 fi
 
 exit 0
+
+
